@@ -5,7 +5,8 @@
 #pragma kernel ProjectionPt1
 #pragma kernel ProjectionPt2
 #pragma kernel ProjectionPt3
-#pragma kernel SetBounds
+#pragma kernel SetBoundsX
+#pragma kernel SetBoundsY
 
 // Setup parameters
 uint2 _Resolution;
@@ -134,47 +135,26 @@ void ProjectionPt3(uint2 id : SV_DispatchThreadID)
 	);
 }
 
-///////////////////////////////////////////////////////////////////////////
-// Set Bounds
-///////////////////////////////////////////////////////////////////////////
-[numthreads(8, 8, 1)]
-void SetBounds(uint2 id : SV_DispatchThreadID)
+[numthreads(64, 1, 1)]
+void SetBoundsX(uint id : SV_DispatchThreadID)
 {
-	if (any(id >= _Resolution))
+	if (any(id >= _Resolution.x * 2))
 		return;
-	
-	// Corners
-	if (all(id == 0))
-	{
-		_XOut[id] = -_XIn[id + uint2(1, 1)];
-	}
-	else if (all(id == _Resolution))
-	{
-		_XOut[id] = -_XIn[id - uint2(1, 1)];
-	}
-	else if (all(id == uint2(0, _Resolution.y)))
-	{
-		_XOut[id] = -_XIn[id + int2(1, -1)];
-	}
-	else if (all(id == uint2(_Resolution.x, 0)))
-	{
-		_XOut[id] = -_XIn[id + int2(-1, 1)];
-	}
-	// Left edge
-	else if (id.x == 0)
-	{
-		_XOut[id] = _XIn[id + uint2(1, 0)] * float3(-1, 1, 1);
-	}
-	else if (id.x == _Resolution.x - 1)
-	{
-		_XOut[id] = _XIn[id - uint2(1, 0)] * float3(-1, 1, 1);
-	}
-	else if (id.y == 0)
-	{
-		_XOut[id] = _XIn[id + uint2(0, 1)] * float3(1, -1, 1);
-	}
-	else if (id.y == _Resolution.y - 1)
-	{
-		_XOut[id] = _XIn[id - uint2(0, 1)] * float3(1, -1, 1);
-	}
+
+	bool left = id < _Resolution.x;
+	int offset = left ? 1 : -1;
+	uint2 edgeId = uint2(left ? 0 : _Resolution.x - 1, id % _Resolution.x);
+	_XOut[edgeId] = _XIn[edgeId + int2(offset, 0)] * float3(-1, 1, 1);
+}
+
+[numthreads(64, 1, 1)]
+void SetBoundsY(uint id : SV_DispatchThreadID)
+{
+	if (any(id >= _Resolution.y * 2))
+		return;
+
+	bool bottom = id < _Resolution.y;
+	int offset = bottom ? 1 : -1;
+	uint2 edgeId = uint2(bottom ? 0 : _Resolution.y - 1, id % _Resolution.y);
+	_XOut[edgeId] = _XIn[edgeId + int2(0, offset)] * float3(1, -1, 1);
 }

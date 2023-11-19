@@ -43,10 +43,13 @@ namespace StableFluids
         private int _projectionPt1Kernel;
         private int _projectionPt2Kernel;
         private int _projectionPt3Kernel;
-        private int _setBoundsKernel;
+        private int _setBoundsXKernel;
+        private int _setBoundsYKernel;
 
         // Thread counts
         private Vector3Int _threadCounts;
+        private int _setBoundsXThreadCount;
+        private int _setBoundsYThreadCount;
 
         private void Start()
         {
@@ -57,6 +60,8 @@ namespace StableFluids
             _projectionPt1Kernel = _stableFluids2DCompute.FindKernel("ProjectionPt1");
             _projectionPt2Kernel = _stableFluids2DCompute.FindKernel("ProjectionPt2");
             _projectionPt3Kernel = _stableFluids2DCompute.FindKernel("ProjectionPt3");
+            _setBoundsXKernel = _stableFluids2DCompute.FindKernel("SetBoundsX");
+            _setBoundsYKernel = _stableFluids2DCompute.FindKernel("SetBoundsY");
             
             // Get thread counts
             _stableFluids2DCompute.GetKernelThreadGroupSizes(_advectionKernel, 
@@ -65,6 +70,12 @@ namespace StableFluids
                 Mathf.CeilToInt(_resolution.x / (float)xThreadGroupSize),
                 Mathf.CeilToInt(_resolution.y / (float)yThreadGroupSize),
                 Mathf.CeilToInt(1 / (float)zThreadGroupSize));
+            _stableFluids2DCompute.GetKernelThreadGroupSizes(_setBoundsXKernel, 
+                out xThreadGroupSize, out yThreadGroupSize, out zThreadGroupSize);
+            _setBoundsXThreadCount = Mathf.CeilToInt(_resolution.x / (float)xThreadGroupSize);
+            _stableFluids2DCompute.GetKernelThreadGroupSizes(_setBoundsYKernel, 
+                out xThreadGroupSize, out yThreadGroupSize, out zThreadGroupSize);
+            _setBoundsYThreadCount = Mathf.CeilToInt(_resolution.y / (float)xThreadGroupSize);
 
             // Pass constants to compute
             _stableFluids2DCompute.SetInts("_Resolution", new int[] { _resolution.x, _resolution.y });
@@ -143,7 +154,7 @@ namespace StableFluids
         private void UpdateDensity()
         {
             Diffuse(_densityInTexture, _densityOutTexture);
-            Graphics.CopyTexture(_densityOutTexture, _densityInTexture);  // Diffuse output is advect input
+            Graphics.CopyTexture(_densityOutTexture, _densityInTexture);  // Swap output to input
             Advect(_densityInTexture, _densityOutTexture);
         }
         
@@ -152,11 +163,11 @@ namespace StableFluids
         /// </summary>
         private void UpdateVelocity()
         {
-            Diffuse(_velocityInTexture, _velocityOutTexture);
-            Project();
-            Graphics.CopyTexture(_velocityOutTexture, _velocityInTexture); // Diffuse output is advect input
-            Advect(_velocityInTexture, _velocityOutTexture);
-            Project();
+            Diffuse(_velocityInTexture, _velocityOutTexture, true);
+            ProjectVelocity();
+            Graphics.CopyTexture(_velocityOutTexture, _velocityInTexture); // Swap output to input
+            Advect(_velocityInTexture, _velocityOutTexture, true);
+            ProjectVelocity();
         }
 
         /// <summary>
@@ -164,7 +175,7 @@ namespace StableFluids
         /// </summary>
         /// <param name="inTexture"></param>
         /// <param name="outTexture"></param>
-        private void Diffuse(RenderTexture inTexture, RenderTexture outTexture)
+        private void Diffuse(RenderTexture inTexture, RenderTexture outTexture, bool setBounds = false)
         {
             for (int k = 0; k < 10; k++)
             {
@@ -174,31 +185,34 @@ namespace StableFluids
                 _stableFluids2DCompute.SetTexture(_diffusionKernel, "_XIn", inTexture);
                 _stableFluids2DCompute.SetTexture(_diffusionKernel, "_XOut", outTexture);
                 _stableFluids2DCompute.Dispatch(_diffusionKernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
+                if (setBounds) SetBounds(inTexture, outTexture);
             }
         }
 
         /// <summary>
         /// Advect input texture by velocity.
         /// </summary>
-        private void Advect(RenderTexture inTexture, RenderTexture outTexture)
+        private void Advect(RenderTexture inTexture, RenderTexture outTexture, bool setBounds = false)
         {
             _stableFluids2DCompute.SetTexture(_advectionKernel, "_Velocity", _velocityInTexture);
             _stableFluids2DCompute.SetTexture(_advectionKernel, "_XIn", inTexture);
             _stableFluids2DCompute.SetTexture(_advectionKernel, "_XOut", outTexture);
             _stableFluids2DCompute.Dispatch(_advectionKernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
+            if (setBounds) SetBounds(inTexture, outTexture);
         }
 
         /// <summary>
         /// Correct the velocities such that pressure is zero.
         /// </summary>
-        private void Project()
+        private void ProjectVelocity()
         {
             // Projection Part 1
             _stableFluids2DCompute.SetTexture(_projectionPt1Kernel, "_PressureOut", _pressureOutTexture);
             _stableFluids2DCompute.SetTexture(_projectionPt1Kernel, "_Divergence", _divergenceTexture);
             _stableFluids2DCompute.SetTexture(_projectionPt1Kernel, "_Velocity", _velocityOutTexture);
             _stableFluids2DCompute.Dispatch(_projectionPt1Kernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
-
+            SetBounds(_velocityInTexture, _velocityOutTexture);
+            
             // Projection Pt2
             for (int k = 0; k < 10; k++)
             {
@@ -209,25 +223,27 @@ namespace StableFluids
                 _stableFluids2DCompute.SetTexture(_projectionPt2Kernel, "_PressureIn", _pressureInTexture);
                 _stableFluids2DCompute.SetTexture(_projectionPt2Kernel, "_PressureOut", _pressureOutTexture);
                 _stableFluids2DCompute.Dispatch(_projectionPt2Kernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
+                SetBounds(_velocityInTexture, _velocityOutTexture);
             }
 
             // Projection Pt3
             _stableFluids2DCompute.SetTexture(_projectionPt3Kernel, "_Velocity", _velocityOutTexture);
             _stableFluids2DCompute.SetTexture(_projectionPt3Kernel, "_PressureIn", _pressureOutTexture);
             _stableFluids2DCompute.Dispatch(_projectionPt3Kernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
-
-            SetBounds();
+            SetBounds(_velocityInTexture, _velocityOutTexture);
         }
         
         /// <summary>
-        /// Sets bounds around edges.
+        /// Enforces boundary condition around edges.
         /// </summary>
-        private void SetBounds()
+        private void SetBounds(RenderTexture inTexture, RenderTexture outTexture)
         { 
-            Graphics.CopyTexture(_velocityOutTexture, _velocityInTexture);
-            _stableFluids2DCompute.SetTexture(_setBoundsKernel, "_XIn", _velocityInTexture);
-            _stableFluids2DCompute.SetTexture(_setBoundsKernel, "_XOut", _velocityOutTexture);
-            _stableFluids2DCompute.Dispatch(_setBoundsKernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
+            _stableFluids2DCompute.SetTexture(_setBoundsXKernel, "_XIn", outTexture);
+            _stableFluids2DCompute.SetTexture(_setBoundsXKernel, "_XOut", inTexture);
+            _stableFluids2DCompute.Dispatch(_setBoundsXKernel, _setBoundsXThreadCount, 1, 1);
+            _stableFluids2DCompute.SetTexture(_setBoundsYKernel, "_XIn", inTexture);
+            _stableFluids2DCompute.SetTexture(_setBoundsYKernel, "_XOut", outTexture);
+            _stableFluids2DCompute.Dispatch(_setBoundsYKernel, _setBoundsYThreadCount, 1, 1);
         }
 
         /// <summary>

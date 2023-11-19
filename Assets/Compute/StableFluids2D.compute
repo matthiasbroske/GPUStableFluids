@@ -1,0 +1,134 @@
+// Kernels
+#pragma kernel AddValue
+#pragma kernel Advection
+#pragma kernel Diffusion
+#pragma kernel ProjectionPt1
+#pragma kernel ProjectionPt2
+#pragma kernel ProjectionPt3
+
+// Setup parameters
+uint2 _Resolution;
+
+// Fluid parameters
+float _Alpha;
+float _Beta;
+float _DeltaTime;
+
+// Add parameters
+float _AddRadius;
+float2 _AddPosition;
+float3 _AddValue;
+
+// Buffers
+Texture2D<float3> _XIn;  // Generic input buffer
+RWTexture2D<float3> _XOut;  // Generic output buffer
+RWTexture2D<float> _PressureIn;
+RWTexture2D<float> _PressureOut;
+RWTexture2D<float> _Divergence;
+RWTexture2D<float2> _Velocity;
+RWTexture2D<float4> _DisplayTexture;
+
+///////////////////////////////////////////////////////////////////////////
+// Add Value
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void AddValue(uint2 id : SV_DispatchThreadID) {
+	if (any(id >= _Resolution))
+		return;
+	
+	float x = distance(id, _AddPosition);
+	float c = _AddRadius;
+	float gaussian = exp(-x*x/(2*c*c));
+	
+	_XOut[id] += _AddValue * gaussian;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Advection
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void Advection(uint2 id : SV_DispatchThreadID)
+{
+	if (any(id < 0) || any(id >= _Resolution))
+		return;
+
+	float2 dt0 = _DeltaTime * (_Resolution - 2);
+	float2 vec = float2(id) - dt0 * _Velocity[id];
+	vec = clamp(vec, 0.5, (_Resolution - 2) + 0.5);
+
+	uint2 xy0 = (uint2) vec;
+	uint2 xy1 = xy0 + 1;
+
+	float2 st1 = vec - xy0;
+	float2 st0 = 1 - st1;
+
+	_XOut[id] = 
+		st0.x * (st0.y * _XIn[xy0] +
+			     st1.y * _XIn[uint2(xy0.x, xy1.y)]) +
+		st1.x * (st0.y * _XIn[uint2(xy1.x, xy0.y)] +
+			     st1.y * _XIn[xy1]);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Diffusion
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void Diffusion(uint2 id : SV_DispatchThreadID)
+{
+	if (any(id < 0) || any(id >= _Resolution))
+		return;
+
+	_XOut[id] =
+		(_XIn[id] + 
+			_Alpha * (_XIn[id + uint2(1, 0)] + 
+					  _XIn[id + uint2(-1, 0)] + 
+					  _XIn[id + uint2(0, 1)] + 
+					  _XIn[id + uint2(0, -1)]
+		)) * _Beta;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Projection Part 1
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void ProjectionPt1(uint2 id : SV_DispatchThreadID) {
+	if (any(id < 0) || any(id >= _Resolution))
+		return;
+
+	_PressureOut[id] = 0;
+	_Divergence[id] = -0.5f *
+		((_Velocity[id + uint2(1, 0)].x - _Velocity[id + uint2(-1, 0)].x) / _Resolution.x +
+		 (_Velocity[id + uint2(0, 1)].y - _Velocity[id + uint2(0, -1)].y) / _Resolution.y);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Projection Part 2
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void ProjectionPt2(uint2 id : SV_DispatchThreadID) {
+	if (any(id < 0) || any(id >= _Resolution))
+		return;
+
+	_PressureOut[id] =
+		(_Divergence[id] +
+			_PressureIn[id + uint2(1, 0)] + 
+			_PressureIn[id + uint2(-1, 0)] + 
+			_PressureIn[id + uint2(0, 1)] + 
+			_PressureIn[id + uint2(0, -1)]
+		) / 4;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Projection Part 3
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void ProjectionPt3(uint2 id : SV_DispatchThreadID)
+{
+	if (any(id < 0) || any(id >= _Resolution))
+		return;
+
+	_Velocity[id] -= 0.5 * float2(
+		(_PressureIn[id + uint2(1, 0)] - _PressureIn[id + uint2(-1, 0)]) * _Resolution.x,
+		(_PressureIn[id + uint2(0, 1)] - _PressureIn[id + uint2(0, -1)]) * _Resolution.y
+	);
+}

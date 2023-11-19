@@ -49,7 +49,7 @@ void AddValue(uint2 id : SV_DispatchThreadID) {
 [numthreads(8, 8, 1)]
 void Advection(uint2 id : SV_DispatchThreadID)
 {
-	if (any(id < 0) || any(id >= _Resolution))
+	if (any(id >= _Resolution))
 		return;
 
 	float2 dt0 = _DeltaTime * (_Resolution - 2);
@@ -75,7 +75,7 @@ void Advection(uint2 id : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void Diffusion(uint2 id : SV_DispatchThreadID)
 {
-	if (any(id < 0) || any(id >= _Resolution))
+	if (any(id >= _Resolution))
 		return;
 
 	_XOut[id] =
@@ -92,7 +92,7 @@ void Diffusion(uint2 id : SV_DispatchThreadID)
 ///////////////////////////////////////////////////////////////////////////
 [numthreads(8, 8, 1)]
 void ProjectionPt1(uint2 id : SV_DispatchThreadID) {
-	if (any(id < 0) || any(id >= _Resolution))
+	if (any(id >= _Resolution))
 		return;
 
 	_PressureOut[id] = 0;
@@ -106,7 +106,7 @@ void ProjectionPt1(uint2 id : SV_DispatchThreadID) {
 ///////////////////////////////////////////////////////////////////////////
 [numthreads(8, 8, 1)]
 void ProjectionPt2(uint2 id : SV_DispatchThreadID) {
-	if (any(id < 0) || any(id >= _Resolution))
+	if (any(id >= _Resolution))
 		return;
 
 	_PressureOut[id] =
@@ -124,7 +124,7 @@ void ProjectionPt2(uint2 id : SV_DispatchThreadID) {
 [numthreads(8, 8, 1)]
 void ProjectionPt3(uint2 id : SV_DispatchThreadID)
 {
-	if (any(id < 0) || any(id >= _Resolution))
+	if (any(id >= _Resolution))
 		return;
 
 	_Velocity[id] -= 0.5 * float2(

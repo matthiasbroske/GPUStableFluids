@@ -43,6 +43,7 @@ namespace StableFluids
         private int _projectionPt1Kernel;
         private int _projectionPt2Kernel;
         private int _projectionPt3Kernel;
+        private int _setBoundsKernel;
 
         // Thread counts
         private Vector3Int _threadCounts;
@@ -214,6 +215,19 @@ namespace StableFluids
             _stableFluids2DCompute.SetTexture(_projectionPt3Kernel, "_Velocity", _velocityOutTexture);
             _stableFluids2DCompute.SetTexture(_projectionPt3Kernel, "_PressureIn", _pressureOutTexture);
             _stableFluids2DCompute.Dispatch(_projectionPt3Kernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
+
+            SetBounds();
+        }
+        
+        /// <summary>
+        /// Sets bounds around edges.
+        /// </summary>
+        private void SetBounds()
+        { 
+            Graphics.CopyTexture(_velocityOutTexture, _velocityInTexture);
+            _stableFluids2DCompute.SetTexture(_setBoundsKernel, "_XIn", _velocityInTexture);
+            _stableFluids2DCompute.SetTexture(_setBoundsKernel, "_XOut", _velocityOutTexture);
+            _stableFluids2DCompute.Dispatch(_setBoundsKernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
         }
 
         /// <summary>

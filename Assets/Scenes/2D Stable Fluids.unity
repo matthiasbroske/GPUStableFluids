@@ -294,8 +294,8 @@ MonoBehaviour:
   _resolution: {x: 800, y: 450}
   _diffusion: 0.0000001
   _initialImage: {fileID: 2800000, guid: 7afc347bf0235411dabb6ce477f95cbe, type: 3}
-  _addVelocity: 5
-  _addDensity: 1
+  _addVelocity: 4
+  _addDensity: 3
   _addVelocityRadius: 2
   _addDensityRadius: 10
 --- !u!4 &1957439556

@@ -5,6 +5,7 @@
 #pragma kernel ProjectionPt1
 #pragma kernel ProjectionPt2
 #pragma kernel ProjectionPt3
+#pragma kernel SetBounds
 
 // Setup parameters
 uint2 _Resolution;
@@ -81,9 +82,9 @@ void Diffusion(uint2 id : SV_DispatchThreadID)
 	_XOut[id] =
 		(_XIn[id] + 
 			_Alpha * (_XIn[id + uint2(1, 0)] + 
-					  _XIn[id + uint2(-1, 0)] + 
+					  _XIn[id - uint2(1, 0)] + 
 					  _XIn[id + uint2(0, 1)] + 
-					  _XIn[id + uint2(0, -1)]
+					  _XIn[id - uint2(0, 1)]
 		)) * _Beta;
 }
 
@@ -97,8 +98,8 @@ void ProjectionPt1(uint2 id : SV_DispatchThreadID) {
 
 	_PressureOut[id] = 0;
 	_Divergence[id] = -0.5f *
-		((_Velocity[id + uint2(1, 0)].x - _Velocity[id + uint2(-1, 0)].x) / _Resolution.x +
-		 (_Velocity[id + uint2(0, 1)].y - _Velocity[id + uint2(0, -1)].y) / _Resolution.y);
+		((_Velocity[id + uint2(1, 0)].x - _Velocity[id - uint2(1, 0)].x) / _Resolution.x +
+		 (_Velocity[id + uint2(0, 1)].y - _Velocity[id - uint2(0, 1)].y) / _Resolution.y);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -112,9 +113,9 @@ void ProjectionPt2(uint2 id : SV_DispatchThreadID) {
 	_PressureOut[id] =
 		(_Divergence[id] +
 			_PressureIn[id + uint2(1, 0)] + 
-			_PressureIn[id + uint2(-1, 0)] + 
+			_PressureIn[id - uint2(1, 0)] + 
 			_PressureIn[id + uint2(0, 1)] + 
-			_PressureIn[id + uint2(0, -1)]
+			_PressureIn[id - uint2(0, 1)]
 		) / 4;
 }
 
@@ -128,7 +129,52 @@ void ProjectionPt3(uint2 id : SV_DispatchThreadID)
 		return;
 
 	_Velocity[id] -= 0.5 * float2(
-		(_PressureIn[id + uint2(1, 0)] - _PressureIn[id + uint2(-1, 0)]) * _Resolution.x,
-		(_PressureIn[id + uint2(0, 1)] - _PressureIn[id + uint2(0, -1)]) * _Resolution.y
+		(_PressureIn[id + uint2(1, 0)] - _PressureIn[id - uint2(1, 0)]) * _Resolution.x,
+		(_PressureIn[id + uint2(0, 1)] - _PressureIn[id - uint2(0, 1)]) * _Resolution.y
 	);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Set Bounds
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void SetBounds(uint2 id : SV_DispatchThreadID)
+{
+	if (any(id >= _Resolution))
+		return;
+	
+	// Corners
+	if (all(id == 0))
+	{
+		_XOut[id] = -_XIn[id + uint2(1, 1)];
+	}
+	else if (all(id == _Resolution))
+	{
+		_XOut[id] = -_XIn[id - uint2(1, 1)];
+	}
+	else if (all(id == uint2(0, _Resolution.y)))
+	{
+		_XOut[id] = -_XIn[id + int2(1, -1)];
+	}
+	else if (all(id == uint2(_Resolution.x, 0)))
+	{
+		_XOut[id] = -_XIn[id + int2(-1, 1)];
+	}
+	// Left edge
+	else if (id.x == 0)
+	{
+		_XOut[id] = _XIn[id + uint2(1, 0)] * float3(-1, 1, 1);
+	}
+	else if (id.x == _Resolution.x - 1)
+	{
+		_XOut[id] = _XIn[id - uint2(1, 0)] * float3(-1, 1, 1);
+	}
+	else if (id.y == 0)
+	{
+		_XOut[id] = _XIn[id + uint2(0, 1)] * float3(1, -1, 1);
+	}
+	else if (id.y == _Resolution.y - 1)
+	{
+		_XOut[id] = _XIn[id - uint2(0, 1)] * float3(1, -1, 1);
+	}
 }

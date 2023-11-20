@@ -6,6 +6,9 @@
 #pragma kernel ProjectionPt1
 #pragma kernel ProjectionPt2
 #pragma kernel ProjectionPt3
+#pragma kernel SetBoundsXY
+#pragma kernel SetBoundsYZ
+#pragma kernel SetBoundsZX
 
 // Setup parameters
 uint3 _Resolution;
@@ -30,7 +33,7 @@ RWTexture3D<float3> _Velocity;
 RWTexture3D<float4> _DisplayTexture;
 
 ///////////////////////////////////////////////////////////////////////////
-// Add Value
+// Clear
 ///////////////////////////////////////////////////////////////////////////
 [numthreads(4, 4, 4)]
 void Clear(uint3 id : SV_DispatchThreadID) {
@@ -151,4 +154,43 @@ void ProjectionPt3(uint3 id : SV_DispatchThreadID)
 		(_PressureIn[id + uint3(0, 1, 0)] - _PressureIn[id - uint3(0, 1, 0)]) * _Resolution.y,
 		(_PressureIn[id + uint3(0, 0, 1)] - _PressureIn[id - uint3(0, 0, 1)]) * _Resolution.z
 	);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Set Bounds
+///////////////////////////////////////////////////////////////////////////
+[numthreads(8, 8, 1)]
+void SetBoundsXY(uint3 id : SV_DispatchThreadID)
+{
+	if (id.x >= _Resolution.x * 2 || id.y >= _Resolution.y)
+		return;
+
+	bool isFrontFace = id.x < _Resolution.x;
+	int offset = isFrontFace ? 1 : -1;
+	uint3 faceId = uint3(id.x % _Resolution.x, id.y, isFrontFace ? 0 : _Resolution.z - 1);
+	_XOut[faceId] = _XIn[faceId + int3(0, 0, offset)] * float3(1, 1, -1);
+}
+
+[numthreads(1, 8, 8)]
+void SetBoundsYZ(uint3 id : SV_DispatchThreadID)
+{
+	if (id.y >= _Resolution.y * 2 || id.z >= _Resolution.z)
+		return;
+
+	bool isLeftFace = id.y < _Resolution.y;
+	int offset = isLeftFace ? 1 : -1;
+	uint3 faceId = uint3(isLeftFace ? 0 : _Resolution.x - 1, id.y % _Resolution.y, id.z);
+	_XOut[faceId] = _XIn[faceId + int3(offset, 0, 0)] * float3(-1, 1, 1);
+}
+
+[numthreads(8, 1, 8)]
+void SetBoundsZX(uint3 id : SV_DispatchThreadID)
+{
+	if (id.z >= _Resolution.z * 2 || id.x >= _Resolution.x)
+		return;
+
+	bool isBottomFace = id.z < _Resolution.z;
+	int offset = isBottomFace ? 1 : -1;
+	uint3 faceId = uint3(id.x, isBottomFace ? 0 : _Resolution.y - 1, id.z % _Resolution.z);
+	_XOut[faceId] = _XIn[faceId + int3(0, offset, 0)] * float3(1, -1, 1);
 }

@@ -135,26 +135,29 @@ void ProjectionPt3(uint2 id : SV_DispatchThreadID)
 	);
 }
 
+///////////////////////////////////////////////////////////////////////////
+// Set Bounds
+///////////////////////////////////////////////////////////////////////////
 [numthreads(64, 1, 1)]
 void SetBoundsX(uint id : SV_DispatchThreadID)
 {
-	if (any(id >= _Resolution.x * 2))
+	if (id >= _Resolution.x * 2)
 		return;
 
-	bool left = id < _Resolution.x;
-	int offset = left ? 1 : -1;
-	uint2 edgeId = uint2(left ? 0 : _Resolution.x - 1, id % _Resolution.x);
-	_XOut[edgeId] = _XIn[edgeId + int2(offset, 0)] * float3(-1, 1, 1);
+	bool isBottomEdge = id < _Resolution.x;
+	int offset = isBottomEdge ? 1 : -1;
+	uint2 edgeId = uint2(id % _Resolution.x, isBottomEdge ? 0 : _Resolution.y - 1);
+	_XOut[edgeId] = _XIn[edgeId + int2(0, offset)] * float3(1, -1, 1);
 }
 
 [numthreads(64, 1, 1)]
 void SetBoundsY(uint id : SV_DispatchThreadID)
 {
-	if (any(id >= _Resolution.y * 2))
+	if (id >= _Resolution.y * 2)
 		return;
 
-	bool bottom = id < _Resolution.y;
-	int offset = bottom ? 1 : -1;
-	uint2 edgeId = uint2(bottom ? 0 : _Resolution.y - 1, id % _Resolution.y);
-	_XOut[edgeId] = _XIn[edgeId + int2(0, offset)] * float3(1, -1, 1);
+	bool isLeftEdge = id < _Resolution.y;
+	int offset = isLeftEdge ? 1 : -1;
+	uint2 edgeId = uint2(isLeftEdge ? 0 : _Resolution.x - 1, id % _Resolution.y);
+	_XOut[edgeId] = _XIn[edgeId + int2(offset, 0)] * float3(-1, 1, 1);
 }

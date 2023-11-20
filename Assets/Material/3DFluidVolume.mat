@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Volume
+  m_Name: 3DFluidVolume
   m_Shader: {fileID: 4800000, guid: 0567db9341921404dab8de51f6953380, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -34,7 +34,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ColorMap:
-        m_Texture: {fileID: 2800000, guid: 8c39eddf925c74ac399bf583da2e7ccf, type: 3}
+        m_Texture: {fileID: 2800000, guid: 23fc8d1ac1fd64bd1b5e56824cc88d12, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -99,8 +99,8 @@ Material:
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _ColorDataMax: 0.01
-    - _ColorDataMin: -0.001
+    - _ColorDataMax: 0.041
+    - _ColorDataMin: 0
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -113,7 +113,7 @@ Material:
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
-    - _OpacityMultiplier: 0.1
+    - _OpacityMultiplier: 0.5
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
@@ -130,10 +130,10 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BoundsMax: {r: 0.7071068, g: 0.5, b: 0.7071068, a: 0}
-    - _BoundsMin: {r: -0.7071068, g: -0.5, b: -0.7071068, a: 0}
+    - _BoundsMax: {r: 0.5, g: 0.5, b: 0.5, a: 0}
+    - _BoundsMin: {r: -0.5, g: -0.5, b: -0.5, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Dimensions: {r: 64, g: 64, b: 64, a: 0}
+    - _Dimensions: {r: 128, g: 128, b: 128, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Opacity: {r: 0.6509434, g: 0.6509434, b: 0.6509434, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}

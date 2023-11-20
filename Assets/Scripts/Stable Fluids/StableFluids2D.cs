@@ -72,10 +72,10 @@ namespace StableFluids
                 Mathf.CeilToInt(1 / (float)zThreadGroupSize));
             _stableFluids2DCompute.GetKernelThreadGroupSizes(_setBoundsXKernel, 
                 out xThreadGroupSize, out yThreadGroupSize, out zThreadGroupSize);
-            _setBoundsXThreadCount = Mathf.CeilToInt(_resolution.x / (float)xThreadGroupSize);
+            _setBoundsXThreadCount = Mathf.CeilToInt(_resolution.x * 2 / (float)xThreadGroupSize);
             _stableFluids2DCompute.GetKernelThreadGroupSizes(_setBoundsYKernel, 
                 out xThreadGroupSize, out yThreadGroupSize, out zThreadGroupSize);
-            _setBoundsYThreadCount = Mathf.CeilToInt(_resolution.y / (float)xThreadGroupSize);
+            _setBoundsYThreadCount = Mathf.CeilToInt(_resolution.y * 2 / (float)xThreadGroupSize);
 
             // Pass constants to compute
             _stableFluids2DCompute.SetInts("_Resolution", new int[] { _resolution.x, _resolution.y });
@@ -173,8 +173,6 @@ namespace StableFluids
         /// <summary>
         /// Diffuse input texture using Gauss-Seidel.
         /// </summary>
-        /// <param name="inTexture"></param>
-        /// <param name="outTexture"></param>
         private void Diffuse(RenderTexture inTexture, RenderTexture outTexture, bool setBounds = false)
         {
             for (int k = 0; k < 10; k++)
@@ -223,7 +221,6 @@ namespace StableFluids
                 _stableFluids2DCompute.SetTexture(_projectionPt2Kernel, "_PressureIn", _pressureInTexture);
                 _stableFluids2DCompute.SetTexture(_projectionPt2Kernel, "_PressureOut", _pressureOutTexture);
                 _stableFluids2DCompute.Dispatch(_projectionPt2Kernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
-                SetBounds(_velocityInTexture, _velocityOutTexture);
             }
 
             // Projection Pt3

@@ -1193,11 +1193,11 @@ MonoBehaviour:
   _stableFluids3DCompute: {fileID: 7200000, guid: 08ecd8d5157ef4383bfea18beed9c996,
     type: 3}
   _volumeMaterial: {fileID: 2100000, guid: 7ebdba353654f4dfcbc00f577b4820ab, type: 2}
-  _resolution: {x: 64, y: 64, z: 64}
+  _resolution: {x: 128, y: 128, z: 128}
   _diffusion: 0.000000001
-  _addDensity: 4
-  _addDensityRadius: 1
-  _velocityMagnitude: 2
+  _addDensity: 3
+  _addDensityRadius: 2
+  _velocityMagnitude: 3
   _addVelocityRadius: 4
   _velocityFluctuation: 5
   _velocityFluctuationRate: 1

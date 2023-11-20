@@ -12,8 +12,8 @@
 
 ## About
 2D and 3D GPU implementations of Jos Stam's infamous [Stable Fluids](https://pages.cs.wisc.edu/~chaol/data/cs777/stam-stable_fluids.pdf) paper using compute shaders in Unity. 
-- For the 2D implementation see [`StableFluids2D.cs`](Assets/Scripts/StableFluids2D.cs) and [`StableFluids2D.compute`](Assets/Compute/StableFluids2D.compute).
-- For the 3D implementation see [`StableFluids3D.cs`](Assets/Scripts/StableFluids3D.cs) and [`StableFluids3D.compute`](Assets/Compute/StableFluids3D.compute), as well as [`Volume.shader`](Assets/Shaders/Volume.shader) for the custom shader responsible for volume rendering the 3D fluid.
+- For the 2D implementation see [`StableFluids2D.cs`](https://github.com/matthiasbroske/GPUStableFluids/blob/6c23f76ec53433a3ead6f9527654010fc71146fb/Assets/Scripts/StableFluids2D.cs) and [`StableFluids2D.compute`](https://github.com/matthiasbroske/GPUStableFluids/blob/6c23f76ec53433a3ead6f9527654010fc71146fb/Assets/Compute/StableFluids2D.compute).
+- For the 3D implementation see [`StableFluids3D.cs`](https://github.com/matthiasbroske/GPUStableFluids/blob/6c23f76ec53433a3ead6f9527654010fc71146fb/Assets/Scripts/StableFluids3D.cs) and [`StableFluids3D.compute`](https://github.com/matthiasbroske/GPUStableFluids/blob/6c23f76ec53433a3ead6f9527654010fc71146fb/Assets/Compute/StableFluids3D.compute), as well as [`Volume.shader`](https://github.com/matthiasbroske/GPUStableFluids/blob/6c23f76ec53433a3ead6f9527654010fc71146fb/Assets/Shaders/Volume.shader) for the custom shader responsible for volume rendering the 3D fluid.
 
 ## Usage
 Download this repository, open with Unity 2022.3 or later, and proceed to either of the two demo scenes in the `Assets/Scenes` folder. The scenes and their respective controls are as follows:

@@ -18,10 +18,12 @@
 ## Usage
 Download this repository, open with Unity 2022.3 or later, and proceed to either of the two demo scenes in the `Assets/Scenes` folder. The scenes and their respective controls are as follows:
 #### `Assets/Scenes/2D Stable Fluids`
+2D Stable Fluids simulation rendered directly to the screen.
 - **Left Click**: Stir fluid
 - **Right Click**: Add dye
 - **R**: Reset simulation
 #### `Assets/Scenes/3D Stable Fluids`
+3D Stable Fluids simulation rendered inside the bounds of a cube.
 - **Left Click**: Rotate camera
 - **Right Click**: Zoom camera
 - **R**: Reset simulation

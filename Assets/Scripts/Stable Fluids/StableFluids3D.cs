@@ -41,6 +41,7 @@ namespace StableFluids
         private RenderTexture _densityInTexture;
         private RenderTexture _velocityOutTexture;
         private RenderTexture _velocityInTexture;
+        private RenderTexture _velocityTempTexture;
         private RenderTexture _pressureOutTexture;
         private RenderTexture _pressureInTexture;
         private RenderTexture _divergenceTexture;
@@ -111,6 +112,7 @@ namespace StableFluids
             _densityInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 3);
             _velocityOutTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 3);
             _velocityInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 3);
+            _velocityTempTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 3);
             _pressureOutTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 1);
             _pressureInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 1);
             _divergenceTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, _resolution.z, 1);
@@ -216,7 +218,11 @@ namespace StableFluids
         /// </summary>
         private void Advect(RenderTexture inTexture, RenderTexture outTexture, bool setBounds = false)
         {
-            _stableFluids3DCompute.SetTexture(_advectionKernel, "_Velocity", _velocityInTexture);
+            // Copy _velocityInTexture to a temporary buffer so that we do not bind it to both
+            // _Velocity and _XIn buffers at the same time, since that breaks simulation on Windows machines for some reason...
+            Graphics.CopyTexture(_velocityInTexture, _velocityTempTexture);
+            
+            _stableFluids3DCompute.SetTexture(_advectionKernel, "_Velocity", _velocityTempTexture);
             _stableFluids3DCompute.SetTexture(_advectionKernel, "_XIn", inTexture);
             _stableFluids3DCompute.SetTexture(_advectionKernel, "_XOut", outTexture);
             _stableFluids3DCompute.Dispatch(_advectionKernel, _threadGroups.x, _threadGroups.y, _threadGroups.z);

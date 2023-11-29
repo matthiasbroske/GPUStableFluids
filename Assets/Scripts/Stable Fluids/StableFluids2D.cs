@@ -32,6 +32,7 @@ namespace StableFluids
         private RenderTexture _densityInTexture;
         private RenderTexture _velocityOutTexture;
         private RenderTexture _velocityInTexture;
+        private RenderTexture _velocityTempTexture;
         private RenderTexture _pressureOutTexture;
         private RenderTexture _pressureInTexture;
         private RenderTexture _divergenceTexture;
@@ -89,6 +90,7 @@ namespace StableFluids
             _densityInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 3);
             _velocityOutTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 2);
             _velocityInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 2);
+            _velocityTempTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 2);
             _pressureOutTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 1);
             _pressureInTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 1);
             _divergenceTexture = RenderTextureUtilities.AllocateRWLinearRT(_resolution.x, _resolution.y, 0, 1);
@@ -192,7 +194,11 @@ namespace StableFluids
         /// </summary>
         private void Advect(RenderTexture inTexture, RenderTexture outTexture, bool setBounds = false)
         {
-            _stableFluids2DCompute.SetTexture(_advectionKernel, "_Velocity", _velocityInTexture);
+            // Copy _velocityInTexture to a temporary buffer so that we do not bind it to both
+            // _Velocity and _XIn buffers at the same time, since that breaks simulation on Windows machines for some reason...
+            Graphics.CopyTexture(_velocityInTexture, _velocityTempTexture);
+            
+            _stableFluids2DCompute.SetTexture(_advectionKernel, "_Velocity", _velocityTempTexture);
             _stableFluids2DCompute.SetTexture(_advectionKernel, "_XIn", inTexture);
             _stableFluids2DCompute.SetTexture(_advectionKernel, "_XOut", outTexture);
             _stableFluids2DCompute.Dispatch(_advectionKernel, _threadCounts.x, _threadCounts.y, _threadCounts.z);
